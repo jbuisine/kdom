@@ -1,5 +1,31 @@
 FROM mratin/maven-node-alpine
 
+# you can specify python version during image build
+ARG PYTHON_VERSION=2.7.9
+
+# install build dependencies and needed tools
+RUN apk add --update --no-cache \
+    wget \
+    gcc \
+    g++ \
+    make \
+    zlib-dev \
+    libffi-dev \
+    openssl-dev \
+    musl-dev
+
+# Install python/pip
+# download and extract python sources
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz \                                              
+    && tar xzf Python-${PYTHON_VERSION}.tgz
+
+# build python and remove left-over sources
+RUN cd /Python-${PYTHON_VERSION} \ 
+    && ./configure --prefix=/usr --enable-optimizations --with-ensurepip=install \
+    && make install \
+    && rm /opt/Python-${PYTHON_VERSION}.tgz /opt/Python-${PYTHON_VERSION} -rf
+
+
 WORKDIR /code
 
 # Install the Angular tools
@@ -26,7 +52,7 @@ ADD src /code/src
 ADD kdom-ui/src /code/ui/src
 
 # Build the app
-RUN ng build --prod --base-href /ui/
+RUN node_modules/angular-cli/bin/ng build --prod --base-href /ui/
 
 # Install the ui app
 RUN mv dist/* /code/src/main/resources/public/ui/
